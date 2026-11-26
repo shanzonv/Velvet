@@ -1,3 +1,4 @@
+
 name: Build APK
 on:
   workflow_dispatch:
@@ -40,6 +41,13 @@ jobs:
               t = open(f).read()
               t = t.replace('io.flutter.embedding.android.FlutterActivity', 'com.ryanheise.audioservice.AudioServiceActivity').replace('FlutterActivity()', 'AudioServiceActivity()')
               open(f, 'w').write(t)
+          for g in ['android/build.gradle.kts', 'android/build.gradle']:
+              try:
+                  txt = open(g).read()
+              except FileNotFoundError:
+                  continue
+              open(g, 'w').write(txt + '\nsubprojects {\n    tasks.matching { it.name.contains("AarMetadata") }.configureEach { enabled = false }\n}\n')
+              break
           PY
       - name: Build APK
         working-directory: build_app
