@@ -17,6 +17,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Use a fixed signing key so updates install over the old app
+        run: |
+          mkdir -p ~/.android
+          base64 -d velvet-key.b64 > ~/.android/debug.keystore
       - name: Create Android project and add Velvet code
         run: |
           flutter create --org com.velvet --project-name velvet --platforms android build_app
@@ -30,7 +34,7 @@ jobs:
           import glob
           m = 'android/app/src/main/AndroidManifest.xml'
           s = open(m).read()
-          perms = ''.join('<uses-permission android:name="android.permission.%s"/>\n' % x for x in ['WAKE_LOCK', 'FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK', 'POST_NOTIFICATIONS'])
+          perms = ''.join('<uses-permission android:name="android.permission.%s"/>\n' % x for x in ['WAKE_LOCK', 'FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK', 'POST_NOTIFICATIONS', 'INTERNET'])
           s = s.replace('<application', perms + '<application', 1)
           svc = '<service android:name="com.ryanheise.audioservice.AudioService" android:foregroundServiceType="mediaPlayback" android:exported="true"><intent-filter><action android:name="android.media.browse.MediaBrowserService"/></intent-filter></service><receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver" android:exported="true"><intent-filter><action android:name="android.intent.action.MEDIA_BUTTON"/></intent-filter></receiver>'
           s = s.replace('</application>', svc + '</application>')
@@ -54,7 +58,7 @@ jobs:
         working-directory: build_app
         run: |
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --build-number=${{ github.run_number }}
       - name: Publish APK as a release
         uses: softprops/action-gh-release@v2
         with:
