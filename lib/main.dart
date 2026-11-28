@@ -315,7 +315,7 @@ class S extends ChangeNotifier {
         final tp = TextPainter(
           text: TextSpan(
             text: String.fromCharCode(Icons.music_note.codePoint),
-            style: TextStyle(fontSize: 280, fontFamily: Icons.music_note.fontFamily, package: Icons.music_note.fontPackage, color: Colors.white.withOpacity(.9)),
+            style: TextStyle(fontSize: 280, fontFamily: Icons.music_note.fontFamily, package: Icons.music_note.fontPackage, color: Colors.white.withValues(alpha: .9)),
           ),
           textDirection: TextDirection.ltr,
         )..layout();
@@ -851,9 +851,9 @@ Widget glass(BuildContext c, Widget child, {double r = 18, EdgeInsets margin = E
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: tint ?? Colors.white.withOpacity(dark ? .10 : .50),
+            color: tint ?? Colors.white.withValues(alpha: dark ? .10 : .50),
             borderRadius: BorderRadius.circular(r),
-            border: Border.all(color: Colors.white.withOpacity(dark ? .22 : .7)),
+            border: Border.all(color: Colors.white.withValues(alpha: dark ? .22 : .7)),
           ),
           child: child,
         ),
@@ -873,9 +873,9 @@ PreferredSizeWidget appBar(BuildContext c, Widget title, {List<Widget>? actions,
     centerTitle: st == 2,
     actions: actions,
     flexibleSpace: st == 3
-        ? ClipRect(child: BackdropFilter(filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: Container(color: Colors.white.withOpacity(.06))))
+        ? ClipRect(child: BackdropFilter(filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: Container(color: Colors.white.withValues(alpha: .06))))
         : null,
-    shape: st == 1 ? Border(bottom: BorderSide(color: Theme.of(c).colorScheme.outline.withOpacity(.4))) : null,
+    shape: st == 1 ? Border(bottom: BorderSide(color: Theme.of(c).colorScheme.outline.withValues(alpha: .4))) : null,
   );
 }
 
@@ -926,7 +926,7 @@ Widget searchBox(BuildContext c, ValueChanged<String> on) {
       enabledBorder: border,
       focusedBorder: border,
       filled: st == 2,
-      fillColor: cs.surfaceContainerHighest.withOpacity(.6),
+      fillColor: cs.surfaceContainerHighest.withValues(alpha: .6),
     ),
   );
   return Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12, 4), child: st == 3 ? glass(c, field, r: 24) : field);
@@ -952,7 +952,7 @@ Future<T?> showDlg<T>(BuildContext c, String title, Widget content, List<Widget>
           side: st == 1 ? BorderSide(color: Theme.of(d).colorScheme.outline) : BorderSide.none,
         ),
         child: st == 3
-            ? glass(d, inner, r: rad(), padding: const EdgeInsets.all(20), tint: Colors.black.withOpacity(.35))
+            ? glass(d, inner, r: rad(), padding: const EdgeInsets.all(20), tint: Colors.black.withValues(alpha: .35))
             : Padding(padding: const EdgeInsets.all(20), child: inner),
       );
     },
@@ -968,12 +968,12 @@ Future<T?> showSheet<T>(BuildContext c, Widget Function(BuildContext) builder, {
       final st = app.style;
       final cs = Theme.of(x).colorScheme;
       final body = builder(x);
-      if (st == 3) return glass(x, body, r: 24, margin: const EdgeInsets.all(8), tint: Colors.black.withOpacity(.35));
+      if (st == 3) return glass(x, body, r: 24, margin: const EdgeInsets.all(8), tint: Colors.black.withValues(alpha: .35));
       return Container(
         decoration: BoxDecoration(
           color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.vertical(top: Radius.circular(rad() + 6)),
-          border: st == 1 ? Border(top: BorderSide(color: cs.outline.withOpacity(.5))) : null,
+          border: st == 1 ? Border(top: BorderSide(color: cs.outline.withValues(alpha: .5))) : null,
         ),
         child: body,
       );
@@ -1017,7 +1017,7 @@ Widget cover(String id, double size, {bool circle = false}) {
             colors: [h.withLightness(.5).withSaturation(.8).toColor(), HSLColor.fromAHSL(1, (h.hue + 40) % 360, .8, .32).toColor()],
           ),
         ),
-        child: Center(child: Icon(Icons.music_note, size: size * .5, color: Colors.white.withOpacity(.9))),
+        child: Center(child: Icon(Icons.music_note, size: size * .5, color: Colors.white.withValues(alpha: .9))),
       );
     } else {
       inner = Image.file(File(cp), fit: BoxFit.cover, cacheWidth: size.round() * 2, errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.music_note)));
@@ -1299,7 +1299,7 @@ class SongTile extends StatelessWidget {
         final pr = Theme.of(c).colorScheme.primary;
         final tile = ListTile(
           dense: st == 1,
-          tileColor: on && st != 3 ? pr.withOpacity(.16) : null,
+          tileColor: on && st != 3 ? pr.withValues(alpha: .16) : null,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(st == 2 ? 40 : (st == 1 ? 4 : 12))),
           leading: st == 1
               ? SizedBox(width: 28, child: Center(child: Text('${index + 1}', style: TextStyle(color: on ? pr : null))))
@@ -1471,14 +1471,14 @@ class MiniPlayer extends StatelessWidget {
             if (st == 2) {
               return Container(
                 margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-                decoration: BoxDecoration(color: cs.surfaceContainerHigh.withOpacity(.9), borderRadius: BorderRadius.circular(40)),
+                decoration: BoxDecoration(color: cs.surfaceContainerHigh.withValues(alpha: .9), borderRadius: BorderRadius.circular(40)),
                 child: inner,
               );
             }
             if (st == 1) {
-              return Container(decoration: BoxDecoration(border: Border(top: BorderSide(color: cs.outline.withOpacity(.4)))), child: inner);
+              return Container(decoration: BoxDecoration(border: Border(top: BorderSide(color: cs.outline.withValues(alpha: .4)))), child: inner);
             }
-            return Container(color: cs.surfaceContainerHighest.withOpacity(.7), child: inner);
+            return Container(color: cs.surfaceContainerHighest.withValues(alpha: .7), child: inner);
           },
         ),
       );
@@ -1547,7 +1547,7 @@ class _VinylState extends State<Vinyl> with SingleTickerProviderStateMixin {
       child: Container(
         width: 260,
         height: 260,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF111111), boxShadow: [BoxShadow(color: col.primary.withOpacity(.5), blurRadius: 40)]),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF111111), boxShadow: [BoxShadow(color: col.primary.withValues(alpha: .5), blurRadius: 40)]),
         child: Stack(alignment: Alignment.center, children: [
           for (final d in [244.0, 222.0, 200.0])
             Container(width: d, height: d, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white12))),
@@ -1648,7 +1648,7 @@ class NowPlaying extends StatelessWidget {
                 if (sub.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: col.onSurface.withOpacity(.7))),
+                    child: Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: col.onSurface.withValues(alpha: .7))),
                   ),
               ]),
             );
@@ -1661,7 +1661,7 @@ class NowPlaying extends StatelessWidget {
               head = Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
-                  boxShadow: [BoxShadow(color: col.primary.withOpacity(st == 3 ? .55 : .3), blurRadius: st == 3 ? 50 : 30, spreadRadius: 2)],
+                  boxShadow: [BoxShadow(color: col.primary.withValues(alpha: st == 3 ? .55 : .3), blurRadius: st == 3 ? 50 : 30, spreadRadius: 2)],
                 ),
                 child: cover(sid, 260),
               );
@@ -1872,7 +1872,7 @@ Widget devCard(BuildContext c, DevRow r) {
           const SizedBox(width: 16),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(r.label, style: TextStyle(fontSize: 12, color: cs.onSurface.withOpacity(.6))),
+              Text(r.label, style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: .6))),
               const SizedBox(height: 2),
               Text(r.value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: r.url != null ? cs.primary : null)),
             ]),
@@ -1892,9 +1892,9 @@ Widget devCard(BuildContext c, DevRow r) {
   return Container(
     margin: const EdgeInsets.symmetric(vertical: 6),
     decoration: BoxDecoration(
-      color: st == 1 ? Colors.transparent : cs.surfaceContainerHighest.withOpacity(.55),
+      color: st == 1 ? Colors.transparent : cs.surfaceContainerHighest.withValues(alpha: .55),
       borderRadius: BorderRadius.circular(rad()),
-      border: st == 1 ? Border.all(color: cs.outline.withOpacity(.5)) : null,
+      border: st == 1 ? Border.all(color: cs.outline.withValues(alpha: .5)) : null,
     ),
     child: tile,
   );
@@ -2063,7 +2063,7 @@ class BottomBar extends StatelessWidget {
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(color: on ? cs.primary.withOpacity(.3) : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(color: on ? cs.primary.withValues(alpha: .3) : Colors.transparent, borderRadius: BorderRadius.circular(16)),
             child: Icon(icons[i], color: on ? cs.primary : null),
           ),
           const SizedBox(height: 2),
@@ -2078,14 +2078,14 @@ class BottomBar extends StatelessWidget {
     if (st == 2) {
       return Container(
         margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-        decoration: BoxDecoration(color: cs.surfaceContainerHigh.withOpacity(.9), borderRadius: BorderRadius.circular(40)),
+        decoration: BoxDecoration(color: cs.surfaceContainerHigh.withValues(alpha: .9), borderRadius: BorderRadius.circular(40)),
         child: row,
       );
     }
     if (st == 1) {
-      return Container(decoration: BoxDecoration(border: Border(top: BorderSide(color: cs.outline.withOpacity(.4)))), child: row);
+      return Container(decoration: BoxDecoration(border: Border(top: BorderSide(color: cs.outline.withValues(alpha: .4)))), child: row);
     }
-    return Container(color: (dark ? Colors.black : Colors.white).withOpacity(dark ? .35 : .45), child: row);
+    return Container(color: (dark ? Colors.black : Colors.white).withValues(alpha: dark ? .35 : .45), child: row);
   }
 }
 
