@@ -1,7 +1,7 @@
 name: velvet
 description: Velvet offline music player
 publish_to: none
-version: 1.0.0+1
+version: 1.1.0+1
 environment:
   sdk: '>=3.3.0 <4.0.0'
 dependencies:
@@ -14,5 +14,9 @@ dependencies:
   shared_preferences: ^2.3.2
   path: ^1.9.0
   audio_metadata_reader: ^1.4.2
+  font_awesome_flutter: ^10.8.0
+  url_launcher: ^6.3.1
+  permission_handler: ^11.3.1
+  google_fonts: ^6.2.1
 flutter:
   uses-material-design: true
