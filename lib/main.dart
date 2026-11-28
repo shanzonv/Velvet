@@ -48,6 +48,7 @@ const L = <String, Map<String, String>>{
     'fx': 'Sound FX', 'fx_all': 'All songs', 'fx_song': 'Only this song', 'speed': 'Speed', 'pitch': 'Pitch',
     'link': 'Pitch follows speed', 'fx_reset': 'Reset all', 'fx_global': 'Use the all-songs setting',
     'fx_note': 'Speed/pitch support can vary by phone.', 'notif': 'Allow notifications to see song controls.',
+    'notif_set': 'Notification settings (open if the music card does not show)',
   },
   'bn': {
     'songs': 'গান', 'playlists': 'প্লেলিস্ট', 'favs': 'প্রিয়', 'recent': 'সাম্প্রতিক', 'dev': 'ডেভেলপার',
@@ -78,6 +79,7 @@ const L = <String, Map<String, String>>{
     'fx': 'সাউন্ড FX', 'fx_all': 'সব গানের জন্য', 'fx_song': 'শুধু এই গানের জন্য', 'speed': 'স্পিড', 'pitch': 'পিচ',
     'link': 'স্পিডের সাথে পিচও বদলাক', 'fx_reset': 'সব রিসেট', 'fx_global': 'সব গানের সেটিং ব্যবহার করো',
     'fx_note': 'স্পিড/পিচের সমর্থন ফোন অনুযায়ী আলাদা হতে পারে।', 'notif': 'গানের কন্ট্রোল দেখতে নোটিফিকেশনের অনুমতি দিন।',
+    'notif_set': 'নোটিফিকেশন সেটিংস (মিউজিক কার্ড না এলে এখানে দেখুন)',
   },
 };
 String t(String k) => L[app.lang]?[k] ?? k;
@@ -199,7 +201,7 @@ class S extends ChangeNotifier {
   List<Map<String, String>> ufonts = [];
   Fx gfx = Fx();
   int accent = 0xFF9B1D45, mode = 0, style = 0, sleepMin = 0, bareN = 0;
-  String lang = 'bn', font = 'sys', defArt = '';
+  String lang = 'en', font = 'sys', defArt = '';
   bool readTags = true, autoLyr = true, lookup = false, netOk = true, bgRun = false;
   double vol = 1.0, boost = 0;
   Timer? sleepT;
@@ -218,7 +220,7 @@ class S extends ChangeNotifier {
     accent = sp.getInt('acc') ?? accent;
     mode = sp.getInt('mode') ?? 0;
     style = sp.getInt('style') ?? 0;
-    lang = sp.getString('lang') ?? 'bn';
+    lang = sp.getString('lang') ?? 'en';
     font = sp.getString('font') ?? 'sys';
     readTags = sp.getBool('tags') ?? true;
     autoLyr = sp.getBool('alyr') ?? true;
@@ -644,6 +646,9 @@ class S extends ChangeNotifier {
   }
 
   Future<void> playList(List<String> ids, int i) async {
+    try {
+      if (!await Permission.notification.isGranted) await Permission.notification.request();
+    } catch (_) {}
     final src = ConcatenatingAudioSource(children: [
       for (final id in ids)
         AudioSource.file(path(songs[id]!.file),
@@ -765,6 +770,9 @@ Future<void> main() async {
     androidNotificationChannelId: 'com.velvet.channel.audio',
     androidNotificationChannelName: 'Velvet',
     androidNotificationOngoing: true,
+    androidNotificationIcon: 'drawable/ic_notification',
+    artDownscaleWidth: 400,
+    artDownscaleHeight: 400,
     notificationColor: Color(app.accent),
   );
   await app.load();
@@ -2016,6 +2024,7 @@ class SettingsPage extends StatelessWidget {
             SwitchListTile(title: Text(t('set_alyr')), value: app.autoLyr, onChanged: (v) => app.pref(alyr: v)),
             SwitchListTile(title: Text(t('set_look')), value: app.lookup, onChanged: (v) => app.pref(look: v)),
             ListTile(leading: const Icon(Icons.volume_up_outlined), title: Text(t('vol')), onTap: () => volSheet(c)),
+            ListTile(leading: const Icon(Icons.notifications_outlined), title: Text(t('notif_set')), onTap: () => openAppSettings()),
             ListTile(
               leading: const Icon(Icons.graphic_eq),
               title: Text(t('fx')),
