@@ -49,6 +49,7 @@ const L = <String, Map<String, String>>{
     'link': 'Pitch follows speed', 'fx_reset': 'Reset all', 'fx_global': 'Use the all-songs setting',
     'fx_note': 'Speed/pitch support can vary by phone.', 'notif': 'Allow notifications to see song controls.',
     'notif_set': 'Notification settings (open if the music card does not show)',
+    'set_resume': 'Remember the last song and position (continue after the app closes)',
   },
   'bn': {
     'songs': 'গান', 'playlists': 'প্লেলিস্ট', 'favs': 'প্রিয়', 'recent': 'সাম্প্রতিক', 'dev': 'ডেভেলপার',
@@ -80,6 +81,7 @@ const L = <String, Map<String, String>>{
     'link': 'স্পিডের সাথে পিচও বদলাক', 'fx_reset': 'সব রিসেট', 'fx_global': 'সব গানের সেটিং ব্যবহার করো',
     'fx_note': 'স্পিড/পিচের সমর্থন ফোন অনুযায়ী আলাদা হতে পারে।', 'notif': 'গানের কন্ট্রোল দেখতে নোটিফিকেশনের অনুমতি দিন।',
     'notif_set': 'নোটিফিকেশন সেটিংস (মিউজিক কার্ড না এলে এখানে দেখুন)',
+    'set_resume': 'শেষ গান ও জায়গা মনে রাখো (app বন্ধ হলেও আবার ঢুকলে সেখান থেকে চালানো যাবে)',
   },
 };
 String t(String k) => L[app.lang]?[k] ?? k;
@@ -204,7 +206,10 @@ class S extends ChangeNotifier {
   String lang = 'en', font = 'sys', defArt = '';
   bool readTags = true, autoLyr = true, lookup = false, netOk = true, bgRun = false;
   double vol = 1.0, boost = 0;
-  Timer? sleepT;
+  Timer? sleepT, resumeT;
+  List<String> queue = [];
+  String? lastSeen;
+  bool resume = true;
 
   String nid() => DateTime.now().microsecondsSinceEpoch.toString();
   String path(String f) => p.join(dir.path, f);
@@ -228,6 +233,7 @@ class S extends ChangeNotifier {
     vol = sp.getDouble('vol') ?? 1.0;
     boost = sp.getDouble('boost') ?? 0;
     bareN = sp.getInt('bare') ?? 0;
+    resume = sp.getBool('resume_on') ?? true;
     final g = sp.getString('gfx');
     if (g != null) {
       try { gfx = Fx.fromJ(jsonDecode(g)); } catch (_) {}
@@ -260,18 +266,25 @@ class S extends ChangeNotifier {
       }
     }
     await mkDef();
-    String? last;
     player.sequenceStateStream.listen((s) {
       final id = (s?.currentSource?.tag as MediaItem?)?.id;
-      if (id == null || id == last) return;
-      last = id;
+      if (id == null || id == lastSeen) return;
+      lastSeen = id;
       recent.remove(id);
       recent.insert(0, id);
       if (recent.length > 30) recent.removeLast();
       save();
       applyVol();
       applyFx(id);
+      saveResume();
     });
+    player.playingStream.listen((on) {
+      if (!on) saveResume();
+    });
+    resumeT = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (player.playing) saveResume();
+    });
+    await restoreLast();
     applyVol();
     background();
   }
@@ -290,7 +303,7 @@ class S extends ChangeNotifier {
     save();
   }
 
-  void pref({int? acc, int? m, int? st, String? l, String? fnt, bool? tags, bool? alyr, bool? look}) {
+  void pref({int? acc, int? m, int? st, String? l, String? fnt, bool? tags, bool? alyr, bool? look, bool? res}) {
     if (acc != null) { accent = acc; sp.setInt('acc', acc); mkDef(); }
     if (m != null) { mode = m; sp.setInt('mode', m); }
     if (st != null) { style = st; sp.setInt('style', st); }
@@ -299,6 +312,11 @@ class S extends ChangeNotifier {
     if (tags != null) { readTags = tags; sp.setBool('tags', tags); }
     if (alyr != null) { autoLyr = alyr; sp.setBool('alyr', alyr); if (alyr) background(); }
     if (look != null) { lookup = look; sp.setBool('look', look); if (look) background(); }
+    if (res != null) {
+      resume = res;
+      sp.setBool('resume_on', res);
+      if (res) { saveResume(); } else { sp.remove('resume'); }
+    }
     notifyListeners();
   }
 
@@ -645,10 +663,8 @@ class S extends ChangeNotifier {
     return a == null ? null : Uri.file(a);
   }
 
-  Future<void> playList(List<String> ids, int i) async {
-    try {
-      if (!await Permission.notification.isGranted) await Permission.notification.request();
-    } catch (_) {}
+  Future<void> setQueue(List<String> ids, int i, {Duration? pos, bool play = true}) async {
+    queue = List<String>.from(ids);
     final src = ConcatenatingAudioSource(children: [
       for (final id in ids)
         AudioSource.file(path(songs[id]!.file),
@@ -659,11 +675,54 @@ class S extends ChangeNotifier {
                 album: songs[id]!.album.isEmpty ? null : songs[id]!.album,
                 artUri: artOf(id))),
     ]);
-    await player.setAudioSource(src, initialIndex: i);
+    await player.setAudioSource(src, initialIndex: i, initialPosition: pos);
     applyVol();
     applyBoost();
     applyFx(ids[i]);
-    player.play();
+    if (play) player.play();
+    saveResume();
+  }
+
+  Future<void> playList(List<String> ids, int i) async {
+    try {
+      if (!await Permission.notification.isGranted) await Permission.notification.request();
+    } catch (_) {}
+    await setQueue(ids, i);
+  }
+
+  void saveResume() {
+    if (!resume || queue.isEmpty) return;
+    final i = player.currentIndex;
+    if (i == null || i < 0 || i >= queue.length) return;
+    sp.setString('resume', jsonEncode({
+      'ids': queue,
+      'cur': queue[i],
+      'pos': player.position.inMilliseconds,
+      'sh': player.shuffleModeEnabled,
+      'lp': player.loopMode.index,
+    }));
+  }
+
+  Future<void> restoreLast() async {
+    if (!resume) return;
+    try {
+      final r = sp.getString('resume');
+      if (r == null) return;
+      final m = jsonDecode(r);
+      final ids = [for (final x in m['ids']) x.toString()].where((x) => songs.containsKey(x)).toList();
+      if (ids.isEmpty) return;
+      var idx = ids.indexOf((m['cur'] ?? '').toString());
+      var ms = (m['pos'] is num) ? (m['pos'] as num).toInt() : 0;
+      if (idx < 0) {
+        idx = 0;
+        ms = 0;
+      }
+      lastSeen = ids[idx];
+      await setQueue(ids, idx, pos: Duration(milliseconds: ms), play: false);
+      await player.setShuffleModeEnabled(m['sh'] == true);
+      final lp = (m['lp'] is num) ? (m['lp'] as num).toInt() : 0;
+      await player.setLoopMode(LoopMode.values[lp.clamp(0, 2).toInt()]);
+    } catch (_) {}
   }
 
   void applyVol() {
@@ -2023,6 +2082,7 @@ class SettingsPage extends StatelessWidget {
             SwitchListTile(title: Text(t('set_tags')), value: app.readTags, onChanged: (v) => app.pref(tags: v)),
             SwitchListTile(title: Text(t('set_alyr')), value: app.autoLyr, onChanged: (v) => app.pref(alyr: v)),
             SwitchListTile(title: Text(t('set_look')), value: app.lookup, onChanged: (v) => app.pref(look: v)),
+            SwitchListTile(title: Text(t('set_resume')), value: app.resume, onChanged: (v) => app.pref(res: v)),
             ListTile(leading: const Icon(Icons.volume_up_outlined), title: Text(t('vol')), onTap: () => volSheet(c)),
             ListTile(leading: const Icon(Icons.notifications_outlined), title: Text(t('notif_set')), onTap: () => openAppSettings()),
             ListTile(
